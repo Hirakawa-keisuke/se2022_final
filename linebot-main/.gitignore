@@ -129,7 +129,8 @@ fabric.properties
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -402,6 +403,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# password
+
+src/main/resources/application.properties
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
