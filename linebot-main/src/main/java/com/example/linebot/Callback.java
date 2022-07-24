@@ -1,27 +1,31 @@
 package com.example.linebot;
 
-import com.example.linebot.modelApi.BookAPI;
 import com.example.linebot.replier.Follow;
 import com.example.linebot.replier.ImgOn;
-import com.example.linebot.service.ImgService;
+import com.linecorp.bot.client.LineBlobClient;
+import com.linecorp.bot.client.MessageContentResponse;
 import com.linecorp.bot.model.event.FollowEvent;
 import com.linecorp.bot.model.event.MessageEvent;
 import com.linecorp.bot.model.event.message.ImageMessageContent;
 import com.linecorp.bot.model.message.Message;
 import com.linecorp.bot.spring.boot.annotation.EventMapping;
 import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.*;
 @LineMessageHandler
-
 public class Callback {
+    private static final Logger log = LoggerFactory.getLogger(Callback.class);
+    private final LineBlobClient client;
 
-    private final ImgService imgService;
-    
     @Autowired
-    public Callback(ImgService imgService){
-        this.imgService = imgService;
+    public Callback(LineBlobClient client){
+        this.client = client;
     }
 
 
@@ -36,8 +40,38 @@ public class Callback {
     // 画像のメッセージイベントに対応する
     @EventMapping
     public Message handleImg(MessageEvent<ImageMessageContent> event) {
-        ImgOn imgOn = imgService.doReplyOfNewItem(event);
+        String userId = event.getSource().getUserId();
+        // ①画像メッセージのidを取得する
+        String msgId = event.getMessage().getId();
+        Optional<String> opt = Optional.empty();
+        try {
+            // ②画像メッセージのidを使って MessageContentResponse を取得する
+            MessageContentResponse resp = client.getMessageContent(msgId).get();
+            log.info("get content{}:", resp);
+            // ③ MessageContentResponse からファイルをローカルに保存する
+            // ※LINEでは、どの解像度で写真を送っても、サーバ側でjpgファイルに変換される
+            opt = makeTmpFile(resp, ".jpg");
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+        // ④ ファイルが保存できたことが確認できるように、ローカルのファイルパスをコールバックする
+        // 運用ではファイルパスを表示することは避けましょう
+        String path = opt.orElseGet(() -> "ファイル書き込みNG");
+        ImgOn imgOn = new ImgOn(path);
         return imgOn.reply();
     }
-
+        // MessageContentResponseの中のバイト入力ストリームを、拡張子を指定してファイルに書き込む。
+        // また、保存先のファイルパスをOptional型で返す。
+        private Optional<String> makeTmpFile(MessageContentResponse resp, String extension) {
+            // tmpディレクトリに一時的に格納して、ファイルパスを返す
+            try (InputStream is = resp.getStream()) {
+                Path tmpFilePath = Files.createTempFile("linebot", extension);
+                Files.copy(is, tmpFilePath, StandardCopyOption.REPLACE_EXISTING);
+                return Optional.ofNullable(tmpFilePath.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return Optional.empty();
+        }
 }
+
