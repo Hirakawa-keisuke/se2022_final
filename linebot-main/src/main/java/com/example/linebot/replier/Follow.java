@@ -15,8 +15,7 @@ public class Follow implements Replier {
 
     @Override
     public Message reply() {
-        String userId = this.event.getSource().getUserId();
-        String text = String.format("あなたのユーザーID:%s", userId);
+        String text = "画像を送信すると画像内にある本の名前が出力されます";
         return new TextMessage(text);
     }
 }
