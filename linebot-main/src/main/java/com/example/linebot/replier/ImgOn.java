@@ -32,8 +32,10 @@ public class ImgOn implements Replier {
             headers.setContentType(MediaType.parseMediaType(Files.probeContentType(file.toPath())));
             headers.setContentLength(bytes.length);
             var request = new HttpEntity<>(bytes, headers);
-
-            String url = "http://127.0.0.1:5000/";
+            // ローカル
+            //String url = "http://127.0.0.1:5000/";
+            // aws ec2
+            String url = "http://18.212.195.211:5000/";
             String result = restTemplate.postForObject(url, request, String.class);
             return new TextMessage(Objects.requireNonNull(result));
         } catch (RestClientException | IOException e) {
