@@ -33,9 +33,9 @@ public class ImgOn implements Replier {
             headers.setContentLength(bytes.length);
             var request = new HttpEntity<>(bytes, headers);
             // ローカル
-            //String url = "http://127.0.0.1:5000/";
+            String url = "http://127.0.0.1:5000/";
             // aws ec2
-            String url = "http://18.212.195.211:5000/";
+            //String url = "{ipアドレス}:5000/";
             String result = restTemplate.postForObject(url, request, String.class);
             return new TextMessage(Objects.requireNonNull(result));
         } catch (RestClientException | IOException e) {
